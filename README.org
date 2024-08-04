@@ -1,4 +1,92 @@
 First, install auto_LiPra using
-:q
-:wq
 
+* Progress
+** Installation
+Given an image and perturbation degree (L_p norm), the auto_LiRPA gives the upper limit and lower limit of model predictions. So it is:
+1. Input image dependent
+2. Maximum perturbation epsilon value dependent.
+
+In practice, the maximum perturbation epsilon value dependence is bad. Because some noise may be intense only for few pixels (black spots) but overall impact is low. For these cases, lets try different estimation of perturbation because as we know,
+| L_p norm   | What it is?                              | Effect |
+|------------+------------------------------------------+--------|
+| L_0 norm   | Number of non-zero elements in a vector. |        |
+| L_1 norm   | Sum of absolute values                   |        |
+| L_2 norm   | Euclidean norm                           |        |
+| L_inf norm | Maximum absolute value                   |        |
+
+** Estimating epsilon
+We estimate epsilon by taking differnece between two ~normalized~ images (original and perturbed). Let us estimate these values for different perturbations.
+Note that, we used ~pinta > Effects > noise / blurs~ feature to add realistic noises and blurs.
+#+begin_src text
+Image shape : (2250, 3000, 3) --> (36, 36)
+L0 Norm ---------------------------------------------------------------------------
+Estimated epsilon for high noise (L-infinity norm): 3589
+Estimated epsilon for low noise (L-infinity norm): 1190
+Estimated epsilon for high blur (L-infinity norm): 3075
+Estimated epsilon for low blur (L-infinity norm): 3353
+L1 Norm ---------------------------------------------------------------------------
+Estimated epsilon for high noise (L-infinity norm): 82.09019470214844
+Estimated epsilon for low noise (L-infinity norm): 4.717646598815918
+Estimated epsilon for high blur (L-infinity norm): 53.34117889404297
+Estimated epsilon for low blur (L-infinity norm): 13.231372833251953
+L2 Norm ---------------------------------------------------------------------------
+Estimated epsilon for high noise (L-infinity norm): 1.771199345588684
+Estimated epsilon for low noise (L-infinity norm): 0.1374788135290146
+Estimated epsilon for high blur (L-infinity norm): 1.4725269079208374
+Estimated epsilon for low blur (L-infinity norm): 0.22920218110084534
+L_inf Norm ---------------------------------------------------------------------------
+Estimated epsilon for high noise (L-infinity norm): 0.09411764144897461
+Estimated epsilon for low noise (L-infinity norm): 0.007843144237995148
+Estimated epsilon for high blur (L-infinity norm): 0.1725490391254425
+Estimated epsilon for low blur (L-infinity norm): 0.00784313678741455
+Estimated epsilon for darker image (L-infinity norm): 0.7098039388656616
+#+end_src
+** L-infinity Norm 
+For default epsilon of 0.003, the following is the outcome. Note that, epsilon is the maximum difference between ~normalized~ original and perturbed image pixels. And since auto-LiRPA was made for adversarial robustness (as the [[file:misc/2002.12920v3.pdf][paper name]] suggests), such small perturbation value is expected. Because adversarial robustness aims to make very small changes to the images such that the model will misclassify.
+#+begin_src text
+Bounding method: backward (CROWN, DeepPoly)
+f_0(x_0):   -5.638 <= f_0(x_0+delta) <=    0.521
+f_1(x_0):  -10.532 <= f_1(x_0+delta) <=   -2.419
+f_2(x_0):    1.883 <= f_2(x_0+delta) <=    7.537
+f_3(x_0):   -5.327 <= f_3(x_0+delta) <=   -0.827
+f_4(x_0):   -7.217 <= f_4(x_0+delta) <=   -1.037
+f_5(x_0):   -5.238 <= f_5(x_0+delta) <=   -0.151
+f_6(x_0):   -5.686 <= f_6(x_0+delta) <=    0.118
+f_7(x_0):   -7.934 <= f_7(x_0+delta) <=   -0.303
+f_8(x_0):  -12.044 <= f_8(x_0+delta) <=   -3.793
+f_9(x_0):   -9.329 <= f_9(x_0+delta) <=   -3.074
+#+end_src
+Our ground truth was index=2. And as we can see, the output range for f_2 is also the highest. As we know, the highest predicted value is the predicted class of a model. So for perturbation 0.003, the restnet model is very robust for the image(index=123).
+
+For an epislon of 0.00784313678741455 (Low blur), the boundings became very broad.
+#+begin_src text
+Bounding method: backward (CROWN, DeepPoly)
+f_0(x_0): -800.391 <= f_0(x_0+delta) <=  595.035
+f_1(x_0): -954.724 <= f_1(x_0+delta) <=  644.942
+f_2(x_0): -656.384 <= f_2(x_0+delta) <=  544.178
+f_3(x_0): -595.657 <= f_3(x_0+delta) <=  418.726
+f_4(x_0): -770.545 <= f_4(x_0+delta) <=  527.708
+f_5(x_0): -719.830 <= f_5(x_0+delta) <=  528.173
+f_6(x_0): -825.266 <= f_6(x_0+delta) <=  488.084
+f_7(x_0): -947.905 <= f_7(x_0+delta) <=  671.103
+f_8(x_0): -1021.283 <= f_8(x_0+delta) <=  689.703
+f_9(x_0): -863.549 <= f_9(x_0+delta) <=  501.727
+#+end_src
+
+For such a high perturbation, the model is no longer robust. As we can see, the prediction range significantly overlaps with other classes and is not the highest. 
+
+~The tool auto-LiRPA still does not yet support L_0,1,2 norms~. Understandbly so. L_inf suffices for adversarial tasks.
+
+** Result
+From our experience, we saw that auto_LiRPA works well for small perturbations. Since it currently supports L_inf only, a simple black dot will result in a high L_inf value. And a high L_inf value will create a really large set of images - most of the images may even not be anything meaningful (e.g. totally black). So the resulting bounding comes out very loose and shows uncertainty in prediction.
+
+To handle requirements like ~noise~, it is terrible. But it is also terrible for verifying requirements like ~blur~, ~motion~ etc. because the perturbation is no longer ~small~, as is with the spirit of adversarial robustness.
+
+So we conclude that ~auto-LiRPA~ tool is not suitable for verifying requirements. It is because it converts requirements into |x+-epsilon| format. Such representation creates a large number of possible images for even medium range perturbations (e.g. 0.02). So we think the following representation are necessary for us.
+1. For noise, L_2 norm is better. The value would be little.
+2. For blur, technically L_inf norm should be good. But in our case, dark images result in high difference between day image and night image (at worst, 255-0=255). So L_inf value comes out high. So auto-LiRPA performs badly with it.
+
+* Resources
+1. Download CIFAR-10 dataset and place it inside data folder. https://www.kaggle.com/c/cifar-10/
+2. Download image enhancement model Extended Super Resulution and place it inside data folder. GAN https://huggingface.co/databuzzword/esrgan/blob/main/RRDB_ESRGAN_x4.pth
+3. Use old version of Numpy to make it compatible with PyTorch. pip install numpy==1.23.0 (because matplotlib requires numpy>=1.23)

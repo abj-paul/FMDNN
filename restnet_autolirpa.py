@@ -129,6 +129,19 @@ def print_bounds(lb, ub):
 
 print_bounds(lb, ub)
 
+# Print original model output
+with torch.no_grad():
+    original_output = bounded_model(image)
+
+# Print original bounds
+def print_original_bounds(output):
+    output = output.detach().cpu().numpy()
+    for j in range(10):
+        print("Original f_{j}(x_0): {o:8.3f}".format(j=j, o=output[0][j]))
+
+print("Original model output bounds:")
+print_original_bounds(original_output)
+
 
 # Our library also supports the interval bound propagation (IBP) based bounds,
 # but it produces much looser bounds.
