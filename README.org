@@ -1,6 +1,6 @@
 First, install auto_LiPra using
 
-* Progress
+* auto_LiRPA
 ** Installation
 Given an image and perturbation degree (L_p norm), the auto_LiRPA gives the upper limit and lower limit of model predictions. So it is:
 1. Input image dependent
@@ -86,6 +86,12 @@ So we conclude that ~auto-LiRPA~ tool is not suitable for verifying requirements
 1. For noise, L_2 norm is better. The value would be little.
 2. For blur, technically L_inf norm should be good. But in our case, dark images result in high difference between day image and night image (at worst, 255-0=255). So L_inf value comes out high. So auto-LiRPA performs badly with it.
 
+* alpha-beta-CROWN
+It supports the following verification specifications:
+  - Lp norm perturbation (p=1,2,infinity, as often used in robustness verification)
+  - [[https://github.com/Verified-Intelligence/alpha-beta-CROWN/blob/main/complete_verifier/exp_configs/tutorial_examples/custom_specs.vnnlib][VNNLIB format input (at most two layers of AND/OR clause, as used in VNN-COMP)]]
+  - Any linear specifications on neural network output (which can be added as a linear layer)
+[[https://github.com/Verified-Intelligence/alpha-beta-CROWN/blob/main/complete_verifier/docs/abcrown_usage.md#guide-on-algorithm-selection][Examples classified]]
 * Resources
 1. Download CIFAR-10 dataset and place it inside data folder. https://www.kaggle.com/c/cifar-10/
 2. Download image enhancement model Extended Super Resulution and place it inside data folder. GAN https://huggingface.co/databuzzword/esrgan/blob/main/RRDB_ESRGAN_x4.pth
