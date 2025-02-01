@@ -96,3 +96,11 @@ It supports the following verification specifications:
 1. Download CIFAR-10 dataset and place it inside data folder. https://www.kaggle.com/c/cifar-10/
 2. Download image enhancement model Extended Super Resulution and place it inside data folder. GAN https://huggingface.co/databuzzword/esrgan/blob/main/RRDB_ESRGAN_x4.pth
 3. Use old version of Numpy to make it compatible with PyTorch. pip install numpy==1.23.0 (because matplotlib requires numpy>=1.23)
+* Temp
+
+
+Static HTML
+By GitHub Actions
+Static HTML logo
+
+Deploy static files in a repository without a build.
